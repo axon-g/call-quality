@@ -1,2 +1,2 @@
-# call-quality
-Quality assessment of audio calls.
+# Call Quality Metrics
+Providing tools to access call quality - with special focus of phone calls. 
