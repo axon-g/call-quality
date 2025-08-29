@@ -14,9 +14,11 @@ LOG = logging.getLogger(__name__)
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 BLD_DIR = os.path.join(SCRIPT_DIR, "..", "build")
 
-
 #MP3_ROOT = os.path.join("/usr/local/share/data/cv/audio/mp3")
 MP3_ROOT = os.getenv("MP3_DIR")
+if MP3_ROOT is None:
+    raise ValueError("Cannot find env.var 'MP3_ROOT' -> create/check '.env' file in the script's dir!")
+
 # fix path
 assert os.path.isdir(MP3_ROOT)
 
