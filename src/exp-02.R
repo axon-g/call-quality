@@ -60,10 +60,10 @@ rm(df.files, df.plt, call.dur)
 
 {
 #  trg.call.direction <- "IN"
-  trg.zero.type <- "abs"
   trg.zero.type <- "near"
-  trg.ch <- "external"
+  trg.zero.type <- "abs"
   trg.ch <- "store"
+  trg.ch <- "external"
   
   df.trg <- df[df$zero==trg.zero.type & df$ch==trg.ch, ]
   hst <- hist(df.trg$span.size, breaks=10000)
@@ -143,18 +143,19 @@ for (uid in uids){
 }
 
 
+uid <- "20250828-113622-08057793719-GIMKOHCHC078941575000000023001"
 ###
 # Plot differences 
 ###
 library(reshape2)
-df.sil20 <- reshape2::dcast(df.stats, uid~ch, value.var="sil20")
-df.sil40 <- reshape2::dcast(df.stats, uid~ch, value.var="sil40")
-df.sil80 <- reshape2::dcast(df.stats, uid~ch, value.var="sil80")
+df.sil20 <- reshape2::dcast(df.stats, uid~ch, value.var="sil20p")
+df.sil40 <- reshape2::dcast(df.stats, uid~ch, value.var="sil40p")
+df.sil80 <- reshape2::dcast(df.stats, uid~ch, value.var="sil80p")
 
 
-hist(df.sil20$external-df.sil80$store, breaks=100)
-hist(df.sil40$external-df.sil50$store, breaks=100)
-hist(df.sil50$external-df.sil50$store, breaks=100)
+hist(df.sil20$external-df.sil20$store, breaks=100, xlim=c(-0.2, 0.5))
+hist(df.sil40$external-df.sil40$store, breaks=100, xlim=c(-0.2, 0.5))
+hist(df.sil80$external-df.sil80$store, breaks=100, xlim=c(-0.2, 0.5))
 
 
 

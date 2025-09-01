@@ -17,6 +17,12 @@ received    94  calls (no-empty)
 total dur    4  hours (4:02:37.64)
 ```
 
+### Call duration 
+* total 4 hours (4:02:37.64)
+* distribution (omitting 10 empty calls)
+![call-durations.png](doc/pix/call-durations.png)
+
+
 
 ### File naming 
 * each call has 3 recordings 
@@ -68,7 +74,8 @@ Sample Encoding: 16-bit Signed Integer PCM
 
 
 # Analysis
-## Silent gaps
+
+## Low quality regions
 * higher frequency components are attenuated/reduced/flattened
 * [better quality sample](doc/audio/good-quality-store.wav)
 * [bad quality sample](doc/audio/bad-quality-store.wav)
@@ -78,8 +85,29 @@ Sample Encoding: 16-bit Signed Integer PCM
 ![power-spec_bad-quality-store.png](doc/pix/power-spec_bad-quality-store.png)
 
 ## Silent gaps
-* audio is zeroed all of a sudden
-* happens both during speech and during slience 
+* audio amplitude is zeroed all of a sudden 
+  * white band in spectrogram
+* happens both (a) during speech and (b) during silence
+  * not due to misconfigured VAD or noise-/echo cancellation  
+![spectrogram_sil-sample.png](doc/pix/spectrogram_sil-sample.png)
 
-![hist-out-abs_zero.png](doc/pix/hist-out-abs_zero.png)
+
+## Distrucbution of silence duration 
+* SIL is normal 
+  * crossing & hitting zero
+  * VAD or noice cancellaion -> zero-ing out everything if there is no speech 
+* SIL is not normal if it occurs within speech 
+* distribution of SIL duration
+### SIL in outbound 
+* SIL in **outbound** channel
+* remarkable peaks -> forced by package loss (package size == 20ms?)
+
+![hist-gap-dur_store.png](doc/pix/hist-gap-dur_store.png)
+
+
+### SIL in outbound 
+* SIL in **inbound** channel
+* no peaks -> no/less packet drops
+* smooth (power) distribution  
+![hist-gap-dur_external.png](doc/pix/hist-gap-dur_external.png)
 
