@@ -1,16 +1,27 @@
 """
 Check zero-regions in in-domain real audio.
 
-Discover SHOPPERS audio -> MP3
+Calculates zero-amplitude spans.
+Extracts these stats to timestamped dirs:
+
+  e.g., 'build/exp-02/run-20250901_1128/sil-gap-stats.csv'
+
+Important dumps are save under 'data/' dir.
+
 """
 import datetime
 import os
-import sys
 import logging
 from typing import List, Tuple
 
 import numpy as np
 import librosa
+
+
+LOG = logging.getLogger(__name__)
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+BLD_DIR = os.path.normpath(os.path.join(SCRIPT_DIR, "..", "build"))
+
 
 
 class AudioFileError(Exception):
@@ -23,12 +34,6 @@ class AudioFileError(Exception):
         return f'Audio file {self.filename} failed with reason: {self.reason}'
 
 
-
-
-
-LOG = logging.getLogger(__name__)
-SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-BLD_DIR = os.path.normpath(os.path.join(SCRIPT_DIR, "..", "build"))
 
 MP3_ROOT = os.getenv("MP3_DIR")
 if MP3_ROOT is None:

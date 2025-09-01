@@ -54,12 +54,9 @@ GOUT  -out   : customer/external
 ----------------------
 ```
 
-* '20250829-102503-0787978525-GIMKOHCHC078941575200000023001-in.wav'
-
-
 
 ### Audio format 
-  * 8kHz 16bit
+  * 8kHz 16bit mono PCM
 ```
 soxi
 Input File     : '20250829-104221-99000000230000000873-GOUT00000023901{-in,-out,}.wav'
@@ -71,7 +68,6 @@ File Size      : 6.77M
 Bit Rate       : 128k
 Sample Encoding: 16-bit Signed Integer PCM
 ```
-
 
 # Analysis
 
@@ -92,21 +88,23 @@ Sample Encoding: 16-bit Signed Integer PCM
 ![spectrogram_sil-sample.png](doc/pix/spectrogram_sil-sample.png)
 
 
-## Distrucbution of silence duration 
+## Distribution of silence duration 
 * SIL is normal 
   * crossing & hitting zero
   * VAD or noice cancellaion -> zero-ing out everything if there is no speech 
 * SIL is not normal if it occurs within speech 
 * distribution of SIL duration
-### SIL in outbound 
-* SIL in **outbound** channel
+### SIL in outbound channels
+* zero-amplitude spans **outbound** channel
+* recorded in-house => track recording device!
 * remarkable peaks -> forced by package loss (package size == 20ms?)
 
 ![hist-gap-dur_store.png](doc/pix/hist-gap-dur_store.png)
 
 
-### SIL in outbound 
-* SIL in **inbound** channel
+### SIL in inbound channels
+* zero-amplitude spans in **inbound** channel
+* external source: other store or customer
 * no peaks -> no/less packet drops
 * smooth (power) distribution  
 ![hist-gap-dur_external.png](doc/pix/hist-gap-dur_external.png)

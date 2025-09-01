@@ -1,5 +1,7 @@
 """
 Discover SHOPPERS audio -> MP3
+Trains GMM classifier.
+
 """
 import datetime
 import os
@@ -26,7 +28,7 @@ assert os.path.isdir(MP3_ROOT)
 class Audio:
     def __init__(self, mp3_file, off: int = -1, size: int = -1):
         self.fpath = mp3_file
-        self.off = off
+        self.off = off  # offset
         self.size = size
 
 
@@ -125,21 +127,17 @@ def get_outliers(mdl, X) -> np.ndarray:
     ixs = np.where(neg_log_probs > thresh)[0]
     return ixs
     # probs = np.exp(log_probs)         # actual probability densities
-
-
-
     # return neg_log_probs
 
 
-def hist():
-    import matplotlib.pyplot as plt
-    plt.hist(log_probs, bins=30, color='skyblue', edgecolor='black')  # bins = number of bars
-    plt.xlabel('Value')
-    plt.ylabel('Frequency')
-    plt.title('Histogram Example')
-    plt.show()
-
-    plt.plot(np.exp(log_probs[:1000]), color='blue', linestyle='-', linewidth=2, label='sin(x)')
+# def hist():
+#     import matplotlib.pyplot as plt
+#     plt.hist(log_probs, bins=30, color='skyblue', edgecolor='black')  # bins = number of bars
+#     plt.xlabel('Value')
+#     plt.ylabel('Frequency')
+#     plt.title('Histogram Example')
+#     plt.show()
+#     plt.plot(np.exp(log_probs[:1000]), color='blue', linestyle='-', linewidth=2, label='sin(x)')
 
 def dev():
     bname = os.path.splitext(os.path.basename(__file__))[0]
