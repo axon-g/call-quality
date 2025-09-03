@@ -16,7 +16,7 @@ from typing import List, Tuple
 
 import numpy as np
 import librosa
-
+import polars
 
 LOG = logging.getLogger(__name__)
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -35,11 +35,11 @@ class AudioFileError(Exception):
 
 
 
-MP3_ROOT = os.getenv("MP3_DIR")
-if MP3_ROOT is None:
-    raise ValueError("Cannot find env.var 'MP3_ROOT' -> create/check '.env' file in the script's dir!")
-if not os.path.isdir(MP3_ROOT):
-    raise ValueError("Cannot find MP3 dir at: %s", MP3_ROOT)
+SHOPPERS_AUDIO_ROOT = os.getenv("SHOPPERS_AUDIO_ROOT")
+if SHOPPERS_AUDIO_ROOT is None:
+    raise ValueError("Cannot find env.var 'SHOPPERS_AUDIO_ROOT' -> create/check '.env' file in the script's dir!")
+if not os.path.isdir(SHOPPERS_AUDIO_ROOT):
+    raise ValueError("Cannot find MP3 dir at: %s", SHOPPERS_AUDIO_ROOT)
 
 
 class Audio:
@@ -50,7 +50,7 @@ class Audio:
 
 
 def iter_mp3():
-    for root, _, fnames in os.walk(MP3_ROOT):
+    for root, _, fnames in os.walk(SHOPPERS_AUDIO_ROOT):
         for fname in [f for f in fnames if f.endswith(".wav")]:
             yield os.path.join(root, fname)
 
@@ -129,8 +129,11 @@ def run():
     os.makedirs(dpath_out, exist_ok=True)
 
     fpath_stats = os.path.join(dpath_out, "sil-gap-stats.csv")
+    fpath_parquet = os.path.join(dpath_out, "sil-gap-stats.parquet")
     sink = open(fpath_stats, "w", encoding="utf-8")
     sink.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format("uid", "GIM", "direction", "zero", "span.off", "span.size", "span.amp", "sample.size"))
+
+    data = {col: [] for col in ("uid", "GIM", "direction", "zero", "span.off", "span.size", "span.amp", "sample.size")}
 
     n_mp3 = 0
     for fpath_mp3 in iter_mp3():
@@ -166,10 +169,49 @@ def run():
             continue
         for gap in zero_gaps:
             sink.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(uid, g_dir, call_direction, "abs", gap[0], gap[1], gap[2], sample_size))
+            data["uid"].append(uid)
+            data["GIM"].append(g_dir)
+            data["direction"].append(call_direction)
+            data["zero"].append("abs")
+            data["span.off"].append(gap[0])
+            data["span.size"].append(gap[1])
+            data["span.amp"].append(gap[2])
+            data["sample.size"].append(sample_size)
+
         for gap in near_zero_gaps:
             sink.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(uid, g_dir, call_direction, "near", gap[0], gap[1], gap[2], sample_size))
+            data["uid"].append(uid)
+            data["GIM"].append(g_dir)
+            data["direction"].append(call_direction)
+            data["zero"].append("near")
+            data["span.off"].append(gap[0])
+            data["span.size"].append(gap[1])
+            data["span.amp"].append(gap[2])
+            data["sample.size"].append(sample_size)
 
+        # if n_mp3 >= 2:
+        #     break
     sink.close()
+
+    df = polars.DataFrame(
+        data,
+        schema={"uid": polars.String,
+                "GIM": polars.String,
+                'direction': polars.String,
+                'zero':  polars.String,
+                'span.off': polars.Int64,
+                'span.size': polars.Int64,
+                'sample.size': polars.Int64,
+                "span.amp": polars.Float64}
+    )
+    df.write_parquet(
+        fpath_parquet,
+        compression="snappy",  # default: 'snappy', options: 'gzip', 'brotli', 'zstd', 'lz4'
+        statistics=True,  # write column statistics for better pruning
+        row_group_size=None,  # e.g., 1024, None = automatic
+        use_pyarrow=True  # use pyarrow instead of native Rust implementation
+    )
+
     LOG.info(f"Stats are written to: {fpath_stats}")
 
 

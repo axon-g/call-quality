@@ -70,9 +70,9 @@ def gen_feats(max_file_cnt: int, fft_pt: int, shift_pt: int) -> None:
     n_fft = fft_pt
     shift = shift_pt
 
-    n_mp3 = 0
     feats = []
     lens = []
+    n_mp3 = 0
     audios = []
     running_off = 0
     for fpath_mp3 in iter_mp3():

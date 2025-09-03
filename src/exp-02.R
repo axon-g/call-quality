@@ -2,22 +2,32 @@ rm(list=ls())
 
 # data/exp-02/run-20250901_0843/sil-gap-stats.csv
 
-path.csv = paste(getwd(), "..", "data", "exp-02", "run-20250901_0843", "sil-gap-stats.csv", sep="/")
-path.csv = paste(getwd(), "..", "data", "exp-02", "run-20250901_1145", "sil-gap-stats.csv", sep="/")
-
-if (!file.exists(path.csv)) {
-  stop("CSV file not found!\n")
+{
+  library(arrow)
+  df <- read_parquet("/home/kinoko/GIT/axon/call-quality/build/exp-02/run-20250902_1727/sil-gap-stats.parquet")
 }
-
-df <- read.csv(path.csv, sep="\t", header = T)
+{
+  # 1st version (less data)
+  #path.csv = paste(getwd(), "..", "data", "exp-02", "run-20250901_0843", "sil-gap-stats.csv", sep="/")
+  
+  # 2nd version (less data)
+  path.csv = paste(getwd(), "..", "data", "exp-02", "run-20250901_1145", "sil-gap-stats.csv", sep="/")
+  if (!file.exists(path.csv)) {
+    stop("CSV file not found!\n")
+  }
+  df <- read.csv(path.csv, sep="\t", header = T)
+}
 
 rm(path.csv)
 #xtabs(~df$uid + df$direction)
 #xtabs(~df$direction)
 
 
+dpath.png <- paste(getwd(), "..", "doc/pix/sil-tracks", sep="/")
+
+
 ##############################################
-### Preporcess
+### Preprocess
 
 xtabs(~df$GIM + df$direction)
 
@@ -45,9 +55,12 @@ xtabs(~df.files$GIM + df.files$direction)
 df.plt <- unique(data.frame(uid=df.files$uid, sample.size=df.files$sample.size))
 
 call.dur <- df.plt$sample.size / 8000/60
-hist(call.dur, breaks=50, xlab="min", main="Call duration", xlim=c(0, 10), col="lightblue", las=1)
-
-
+hst <- hist(call.dur, breaks=50, xlab="min", main="Call duration", 
+     xlim=c(0, 20), ylim=c(0, 70),
+     col="lightblue", las=1)
+abline(h=seq(0, 80, 5), lty=2, col="lightgray")
+abline(h=seq(0, 80, 10), col="gray")
+plot(hst, col="lightblue", add=T)
 
 rm(df.files, df.plt, call.dur)
 ### 
@@ -55,6 +68,9 @@ rm(df.files, df.plt, call.dur)
 
 ##############################################
 ### Distribution of absolute SIL duration
+##############################################
+# - does not work with parquett data!
+
 # bp <- barplot(xtabs(~df$zero), col=c("lightblue", "pink"), xlim=c())
 # xtabs(~df$zero)
 
@@ -62,17 +78,18 @@ rm(df.files, df.plt, call.dur)
 #  trg.call.direction <- "IN"
   trg.zero.type <- "near"
   trg.zero.type <- "abs"
-  trg.ch <- "store"
   trg.ch <- "external"
+  trg.ch <- "store"
   
   df.trg <- df[df$zero==trg.zero.type & df$ch==trg.ch, ]
-  hst <- hist(df.trg$span.size, breaks=10000)
+  hst <- hist(df.trg$span.size, breaks=100*1000, plot=F)
+  length(hst$mids)
   
   x.min <- min(hst$breaks)
   x.max <- 2000 
   xi.max <- which(hst$breaks == x.max)
   
-  hst <- hist(df.trg$span.size, breaks=10000, xlim=c(x.min, x.max), ylim=c(0, 1100),
+  hst <- hist(df.trg$span.size, breaks=10000, xlim=c(x.min, x.max), ylim=c(0, 5100),
               ylab="Count", xlab="Duration in frames (800=100ms)", main="",
               col="lightblue"
   )
@@ -94,7 +111,8 @@ rm(df.files, df.plt, call.dur)
 # abline(h=200, col=2)  
   
 #  x.peak <- c(x[y.diff > 120], 1120)
-  x.peak <- c(x[y.diff > 200], 1120)  # '1120' visually clear peak
+#  x.peak <- c(x[y.diff > 200], 1120)  # '1120' visually clear peak
+  x.peak <- c(x[y.diff > 500])
   i <- which(x %in% x.peak )
   y.peak <- y[i]
   text(x.peak, y.peak, paste0(floor(1000 * x.peak / 8000), "ms"), col="red", pos=3)
@@ -107,6 +125,82 @@ rm(df.files, df.plt, call.dur)
 
 ###
 ##############################################
+
+##############################################
+### Plot silence regions
+###  |----| |-|    |--|      'store'
+###     |--|  |---| |---|    'extern'
+
+uids <- sort(unique(df$uid))
+
+ch <- "store"
+
+{
+  # special case with 2 sec SIL -> turns out to be ringing SIL
+  # 25.24 * 8000
+  t0 <- 201920
+  uid <- "20250828-163928-09031765335-GIMKOHCHC078941575000000023001"
+}
+
+
+uid <- uids[3]
+for(uid in uids)
+{
+  hz <- 8000
+  thresh.ms <- 20
+  thresh <- thresh.ms * hz / 1000
+  df.trg <- df[df$uid == uid & df$zero == "abs", ]
+  df.trg <- df.trg[df.trg$span.size > thresh,]
+  
+  n <- dim(df.trg)[1]
+  x.max <- df.trg$span.off[n] + df.trg$span.size[n]
+  
+  fpath.png <- paste0(dpath.png, "/", paste0(uid, ".png"))
+  png.w  <- max(800, 20*x.max/8000)
+  png.w  <- 3200
+  png(fpath.png,  width=png.w, height = 320, units = "px", pointsize = 12)
+  {
+    par(mar = c(3, 1, 1, 1))
+    plot(NA, type = "n", 
+         xlim = c(0, x.max), 
+         #       xlim = c(t0-8000, t0+8000), 
+         ylim = c(-2, 2), xlab = "X", ylab = "y",  yaxt = "n", xaxt="n")
+    
+    x.lab <- seq(0, ceiling(x.max/8000), 5)
+    x.at <- x.lab*8000
+    axis(1, x.at, x.lab)
+    axis(2, x.at, x.lab)
+    abline(v=x.at, col="lightgray")
+    
+    for (i in which(df.trg$ch == "store")){
+      x0 <- df.trg$span.off[i]
+      x1 <- x0 + df.trg$span.size[i]
+      rect(x0, 0.5, x1, 1.5, col = "skyblue", border = "blue")
+    }
+    
+    #  abline(v=t0, col=2)
+    #  which(df.trg$span.off==t0)
+    #  df.trg[42, ]
+    #  abline(v=t0+8000*0.08, col=2)
+    
+    
+    for (i in which(df.trg$ch == "external")){
+      x0 <- df.trg$span.off[i]
+      x1 <- x0 + df.trg$span.size[i]
+      rect(x0, -1.5, x1, -0.5, col = "pink", border = "red")
+    }
+    text(x.max/2, 0.1, uid)
+  }
+  dev.off()
+  
+}
+
+
+
+###
+##############################################
+
+
 
 uid <- sort(unique(df$uid))[32]
 
