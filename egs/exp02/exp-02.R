@@ -31,7 +31,7 @@ dpath.png <- paste(getwd(), "..", "doc/pix/sil-tracks", sep="/")
 
 xtabs(~df$GIM + df$direction)
 
-# remove diraction "N/A" (no suffixe, 2 channels mixed)
+# drop rows for 2-ch mix files (direction=="N/A")
 df <- df[df$direction != "N/A", ]
 
 df$ch <- NA
