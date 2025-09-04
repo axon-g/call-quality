@@ -15,7 +15,7 @@ from textgrid import TextGrid, IntervalTier
 import soundfile
 
 LOG = logging.getLogger(__file__)
-HUGGING_FACE_TOKEN = "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"  # expires by 2024/03/31
+HUGGING_FACE_TOKEN = os.getenv("HUGGING_FACE_TOKEN")
 
 
 class PyannoteVadWrapper:
